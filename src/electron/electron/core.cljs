@@ -18,7 +18,7 @@
             [electron.git :as git]
             ["/electron/utils" :as utils]))
 
-(defonce LSP_SCHEME "lsp")
+(defonce LSP_SCHEME "logseq")
 (defonce LSP_PROTOCOL (str LSP_SCHEME "://"))
 (defonce PLUGIN_URL (str LSP_PROTOCOL "logseq.io/"))
 (defonce STATIC_URL (str LSP_PROTOCOL "logseq.com/"))
@@ -91,7 +91,7 @@
                    :logger logger
                    :win    win})))
 
-(defn setup-interceptor! []
+(defn setup-interceptor! [win]
   (.registerFileProtocol
     protocol "assets"
     (fn [^js request callback]
@@ -114,6 +114,12 @@
             path' (.join path ROOT path')]
 
         (callback #js {:path path'}))))
+
+  (.registerHttpProtocol
+   protocol LSP_SCHEME
+   (fn [^js request callback]
+     ;; placeholder
+     (.loadURL MAIN_WINDOW_ENTRY)))
 
   #(do
      (.unregisterProtocol protocol LSP_SCHEME)
@@ -290,8 +296,8 @@
                                      (.quit app)))
       (.on app "ready"
            (fn []
-             (let [t0 (setup-interceptor!)
-                   ^js win (create-main-window)
+             (let [^js win (create-main-window)
+                   t0 (setup-interceptor! win)
                    _ (reset! *win win)
                    *quitting? (atom false)]
                (.. logger (info (str "Logseq App(" (.getVersion app) ") Starting... ")))
